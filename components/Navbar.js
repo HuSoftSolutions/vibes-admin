@@ -16,7 +16,7 @@ const Navbar = () => {
   };
 
   return (
-		<nav className="bg-gray-800 text-white p-4">
+		<nav className="bg-gray-800 text-white p-4 text-xs">
 		<div className=" mx-auto flex justify-between items-center">
 				<div className="text-lg font-semibold">Vibes 312 Admin Panel</div>
 				{user && (

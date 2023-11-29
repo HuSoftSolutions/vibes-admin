@@ -1,4 +1,15 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+	experimental:{
+		appDir: true
+	},
+	images: {
+		remotePatterns: [
+			{
+				hostname: 'firebasestorage.googleapis.com'
+			}
+		]
+	}
+}
 
 module.exports = nextConfig

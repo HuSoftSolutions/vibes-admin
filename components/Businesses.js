@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import useBusinesses from "../hooks/useBusinesses";
 import useManageBusiness from "../hooks/useManageBusiness"; // Import the custom hook
+import useCategories from '../hooks/useCategories'; // Import the custom hook
 import { MdEdit } from "react-icons/md";
 import Image from "next/image";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
+import Modal from '../components/Modal'; // Import Modal component
 
 const Businesses = () => {
   const businesses = useBusinesses();
@@ -12,6 +14,33 @@ const Businesses = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editedBusiness, setEditedBusiness] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
+
+	const [newCategory, setNewCategory] = useState({ title: '', value: '' });
+	const [editingCategoryId, setEditingCategoryId] = useState(null);
+	const { categories, addCategory, editCategory, deleteCategory } = useCategories();
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+
+	
+	const handleAddCategory = () => {
+		addCategory(newCategory.title, newCategory.value.toLowerCase());
+		setNewCategory({ title: '', value: '' });
+	};
+	
+	const handleEditCategory = (id) => {
+		const category = categories.find(cat => cat.id === id);
+		setNewCategory({ title: category.title, value: category.value });
+		setEditingCategoryId(id);
+	};
+	
+	const handleUpdateCategory = () => {
+		editCategory(editingCategoryId, newCategory.title, newCategory.value.toLowerCase());
+		setNewCategory({ title: '', value: '' });
+		setEditingCategoryId(null);
+	};
+	
+	const handleDeleteCategory = (id) => {
+		deleteCategory(id);
+	};
 
   const renderPreferences = (preferences) => {
     return (
@@ -30,6 +59,50 @@ const Businesses = () => {
     }));
   };
 
+	const renderCategoryModalContent = () => (
+		<div>
+			<input
+				type="text"
+				placeholder="Category Title"
+				className="border p-2 mb-2 w-full"
+				value={newCategory.title}
+				onChange={e => setNewCategory({ ...newCategory, title: e.target.value })}
+			/>
+			<input
+				type="text"
+				placeholder="Category Value (lowercase)"
+				className="border p-2 mb-4 w-full"
+				value={newCategory.value}
+				onChange={e => setNewCategory({ ...newCategory, value: e.target.value })}
+			/>
+			<button
+				onClick={editingCategoryId ? handleUpdateCategory : handleAddCategory}
+				className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+			>
+				{editingCategoryId ? 'Update' : 'Add'} Category
+			</button>
+			{categories.map(category => (
+				<div key={category.id} className="flex items-center justify-between mt-2">
+					<span>{category.title}</span>
+					<div>
+						<button
+							onClick={() => handleEditCategory(category.id)}
+							className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded mr-2"
+						>
+							Edit
+						</button>
+						<button
+							onClick={() => handleDeleteCategory(category.id)}
+							className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
+						>
+							Delete
+						</button>
+					</div>
+				</div>
+			))}
+		</div>
+	);
+
   const openEditModal = (business) => {
     setEditedBusiness({ ...business });
     setIsModalOpen(true);
@@ -41,24 +114,13 @@ const Businesses = () => {
     setPhotoFile(null);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditedBusiness((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handlePreferencesChange = (e) => {
-    const { name, value } = e.target;
-    setEditedBusiness((prev) => ({
-      ...prev,
-      preferences: {
-        ...prev.preferences,
-        [name]: value,
-      },
-    }));
-  };
+	const handleInputChange = (e) => {
+		const { name, value } = e.target;
+		setEditedBusiness((prev) => ({
+			...prev,
+			[name]: value,
+		}));
+	};
 
   const handleFileChange = (e) => {
     setPhotoFile(e.target.files[0]);
@@ -87,6 +149,21 @@ const Businesses = () => {
                 className="mt-1 block w-full p-2 border border-gray-300 rounded"
               />
             </label>
+						<label className="block">
+            <span className="text-gray-700">Category</span>
+            <select
+              name="category"
+              value={editedBusiness.category}
+              onChange={handleInputChange}
+              className="mt-1 block w-full p-2 border border-gray-300 rounded"
+            >
+              {categories.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.title}
+                </option>
+              ))}
+            </select>
+          </label>
             <label className="block">
               <span className="text-gray-700">Address</span>
               <input
@@ -107,24 +184,7 @@ const Businesses = () => {
                 className="mt-1 block w-full p-2 border border-gray-300 rounded"
               />
             </label>
-            {/* Preferences Editing */}
-            <div>
-              <h3 className="text-gray-700 text-lg mb-2">Preferences</h3>
-              {Object.entries(editedBusiness.preferences).map(
-                ([key, value]) => (
-                  <label key={key} className="block mb-2">
-                    <span className="text-gray-700 capitalize">{key}</span>
-                    <input
-                      type="number"
-                      name={key}
-                      value={value}
-                      onChange={handlePreferencesChange}
-                      className="mt-1 block w-full p-2 border border-gray-300 rounded"
-                    />
-                  </label>
-                )
-              )}
-            </div>
+           
             {/* File Upload */}
             <div className="mb-4">
               <Image
@@ -172,6 +232,15 @@ const Businesses = () => {
 
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+			    <Modal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)}>
+      {renderCategoryModalContent()}
+    </Modal>
+    <button 
+      onClick={() => setIsCategoryModalOpen(true)}
+      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4"
+    >
+      Manage Categories
+    </button>
       {renderEditModal()}
       <table className="w-full text-xs text-left text-gray-500">
         <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -181,6 +250,9 @@ const Businesses = () => {
             </th>
             <th scope="col" className="py-3 px-6">
               Name
+            </th>
+						<th scope="col" className="py-3 px-6">
+              Category
             </th>
             <th scope="col" className="py-3 px-6">
               Address
@@ -209,6 +281,7 @@ const Businesses = () => {
                   />
                 </td>
                 <td className="p-1">{business.name}</td>
+                <td className="p-1">{business.category}</td>
                 <td className="p-1">{business.address}</td>
                 <td className="p-1">{business.rating}</td>
                 <td className="p-1">
@@ -238,6 +311,7 @@ const Businesses = () => {
           ))}
         </tbody>
       </table>
+
       {error && <p className="error">{error.message}</p>}
     </div>
   );
